@@ -1,0 +1,9 @@
+MetalHexTiling contains a Metal adaptation of three-hex-tiling:
+https://github.com/ameobea/three-hex-tiling
+
+three-hex-tiling is Copyright (c) 2023-2024 Casey Primozic and others
+and is distributed under the MIT License included in this repository.
+
+The upstream shader identifies its algorithm as adapted from Fabrice Neyret's
+Shadertoy "Procedural texture bombing" example:
+https://www.shadertoy.com/view/MdyfDV

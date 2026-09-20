@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#09090b" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <meta
+      name="description"
+      content="Stochastic, non-repeating texture tiling for Apple Metal."
+    />
+    <title>metal-hex-tiling</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+              mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-zinc-950 text-zinc-100 antialiased selection:bg-emerald-300 selection:text-zinc-950">
+    <div class="pointer-events-none fixed inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_top,rgba(52,211,153,0.10),transparent_62%)]"></div>
+
+    <main class="relative mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-7 sm:px-10 lg:px-12">
+      <nav class="flex items-center justify-between border-b border-white/10 pb-5">
+        <a href="#" class="font-mono text-sm tracking-tight text-zinc-300">metal-hex-tiling</a>
+        <a
+          data-repository-link
+          href="../"
+          class="text-sm text-zinc-500 transition hover:text-zinc-100"
+        >
+          GitHub ↗
+        </a>
+      </nav>
+
+      <section class="flex flex-1 items-center py-24 sm:py-32">
+        <div class="w-full">
+          <div class="mb-7 flex items-center gap-3 font-mono text-xs uppercase tracking-[0.22em] text-emerald-300">
+            <span class="h-px w-8 bg-emerald-300/70"></span>
+            Metal · Swift Package
+          </div>
+
+          <h1 class="max-w-4xl text-5xl font-medium leading-[0.98] tracking-[-0.055em] text-white sm:text-7xl lg:text-8xl">
+            Break the repeat.<br />Keep the texture.
+          </h1>
+
+          <p class="mt-8 max-w-2xl text-lg leading-8 text-zinc-400 sm:text-xl">
+            Stochastic hex tiling for Apple GPUs. Up to three translated samples suppress visible repetition—without larger textures or generated geometry.
+          </p>
+
+          <div class="mt-10 flex flex-wrap gap-3">
+            <a
+              href="#install"
+              class="rounded-full bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-950 transition hover:bg-emerald-300"
+            >
+              Get started
+            </a>
+            <a
+              data-repository-link
+              href="../"
+              class="rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-zinc-300 transition hover:border-white/35 hover:text-white"
+            >
+              View source
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <figure class="border-t border-white/10 py-10 sm:py-14">
+        <img
+          src="images/metal-hex-tiling-before-after.png"
+          alt="The same terrain and seamless texture before and after three-sample stochastic hex tiling"
+          width="1920"
+          height="660"
+          decoding="async"
+          class="w-full rounded-xl border border-white/10 bg-zinc-900"
+        />
+        <figcaption class="mt-4 font-mono text-xs text-zinc-600">
+          Same texture · same terrain · same camera
+        </figcaption>
+      </figure>
+
+      <section class="grid border-y border-white/10 sm:grid-cols-3">
+        <div class="py-7 sm:pr-7">
+          <p class="font-mono text-xs text-zinc-600">01</p>
+          <h2 class="mt-5 text-base font-medium">Metal only</h2>
+          <p class="mt-2 text-sm leading-6 text-zinc-500">No MetalKit or AppKit dependency. Use any renderer or drawable stack.</p>
+        </div>
+        <div class="border-t border-white/10 py-7 sm:border-l sm:border-t-0 sm:px-7">
+          <p class="font-mono text-xs text-zinc-600">02</p>
+          <h2 class="mt-5 text-base font-medium">Mip correct</h2>
+          <p class="mt-2 text-sm leading-6 text-zinc-500">Explicit gradients preserve filtering across stochastic patch boundaries.</p>
+        </div>
+        <div class="border-t border-white/10 py-7 sm:border-l sm:border-t-0 sm:pl-7">
+          <p class="font-mono text-xs text-zinc-600">03</p>
+          <h2 class="mt-5 text-base font-medium">PBR ready</h2>
+          <p class="mt-2 text-sm leading-6 text-zinc-500">Apply the same lattice to color, normal, roughness, and metalness maps.</p>
+        </div>
+      </section>
+
+      <section id="install" class="grid gap-10 py-24 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+        <div>
+          <p class="font-mono text-xs uppercase tracking-[0.22em] text-emerald-300">One primitive</p>
+          <h2 class="mt-5 text-3xl font-medium tracking-tight sm:text-4xl">Compose it with your shader.</h2>
+          <p class="mt-5 max-w-md leading-7 text-zinc-500">
+            The package ships MSL source and a small Swift configuration API. Your material decides which maps use stochastic sampling.
+          </p>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-white/10 bg-black/40 shadow-2xl shadow-black/30">
+          <div class="flex items-center justify-between border-b border-white/10 px-5 py-3 font-mono text-xs text-zinc-600">
+            <span>Renderer.swift</span>
+            <span>Swift</span>
+          </div>
+          <pre class="overflow-x-auto p-5 text-[13px] leading-7 text-zinc-300"><code><span class="text-fuchsia-300">import</span> MetalHexTiling
+
+<span class="text-fuchsia-300">let</span> library = <span class="text-fuchsia-300">try</span> HexTilingMetal.makeLibrary(
+    device: device,
+    appending: shaderSource
+)
+
+<span class="text-fuchsia-300">var</span> options = HexTilingParameters(
+    patchScale: <span class="text-emerald-300">2</span>
+).shaderVector</code></pre>
+        </div>
+      </section>
+
+      <footer class="flex flex-col gap-3 border-t border-white/10 py-6 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
+        <p>MIT licensed. Built for Apple Metal.</p>
+        <p>Inspired by three-hex-tiling and Fabrice Neyret.</p>
+      </footer>
+    </main>
+
+    <script>
+      const repository = location.hostname.endsWith("github.io")
+        ? `https://github.com/${location.hostname.split(".")[0]}/${location.pathname.split("/").filter(Boolean)[0] || `${location.hostname.split(".")[0]}.github.io`}`
+        : "../";
+      document.querySelectorAll("[data-repository-link]").forEach((link) => {
+        link.href = repository;
+      });
+    </script>
+  </body>
+</html>
