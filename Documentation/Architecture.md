@@ -22,6 +22,10 @@ Random UV translations are discontinuous across patch boundaries. Implicit deriv
 
 Calculate `dfdx` and `dfdy` before entering non-uniform control flow.
 
+## Stable weights and skipped samples
+
+Weights are divided by their maximum before exponentiation, then normalized. This preserves their ratios while avoiding underflow near triangle centers at large exponents. After the skip threshold is applied, the surviving weights are normalized again; the strongest sample is retained even when the threshold is one. Constant input therefore stays constant. Nonzero skip thresholds still introduce small discontinuities when samples cross the threshold; use zero when inspecting continuity.
+
 ## Color and data maps
 
 The upstream GLSL applies approximate gamma conversion to the complete `vec4`, including data maps and alpha. This port instead blends sampled values linearly:
@@ -31,6 +35,10 @@ The upstream GLSL applies approximate gamma conversion to the complete `vec4`, i
 - decode and renormalize blended normals in the host material pipeline.
 
 This follows Metal/PBR resource semantics but is intentionally not pixel-identical to the WebGL implementation.
+
+Contrast correction applies only to RGB. Alpha always uses normalized weighted blending. Disable correction for data maps by default, decode normal RGB from `[0,1]` to `[-1,1]`, then normalize before transforming through your tangent basis. The flat-normal GPU test verifies neutral data preservation, not a complete tangent-space lighting implementation.
+
+Correction estimates the mean from the coarsest mip and is automatically disabled for single-level textures. Provide a complete, correctly generated mip chain for a meaningful global mean. RGB output may exceed `[0,1]`; downstream code owns tone mapping or clamping bounded material values.
 
 ## Package boundary
 

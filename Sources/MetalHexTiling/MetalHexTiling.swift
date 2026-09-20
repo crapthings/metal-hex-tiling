@@ -22,7 +22,8 @@ public struct HexTilingParameters: Sendable, Equatable {
     }
 
     /// The 16-byte value expected by `HexTilingArguments.options` in the MSL API.
-    /// Non-finite or out-of-range input is sanitized to prevent shader NaNs.
+    /// Sanitizes non-finite parameters and clamps the documented controls.
+    /// Callers must still provide finite UVs/gradients at a reasonable magnitude.
     public var shaderVector: SIMD4<Float> {
         SIMD4(
             max(patchScale.isFinite ? patchScale : 2, 0.0001),

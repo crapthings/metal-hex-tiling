@@ -26,7 +26,8 @@ inline float4 hexTilingSample(texture2d<float> texture, sampler textureSampler,
                               float2 uv, float2 uvDx, float2 uvDy,
                               constant HexTilingArguments &arguments) {
     float patchScale = max(arguments.options.x, 0.0001);
-    bool contrastCorrect = arguments.options.y >= 0.5;
+    // A single-level texture has no coarse mip that can approximate its mean.
+    bool contrastCorrect = arguments.options.y >= 0.5 && texture.get_num_mip_levels() > 1;
     float threshold = clamp(arguments.options.z, 0.0, 1.0);
     float exponent = clamp(arguments.options.w, 0.0001, 64.0);
 
@@ -52,18 +53,32 @@ inline float4 hexTilingSample(texture2d<float> texture, sampler textureSampler,
         W = float3(-F.z, 1.0 - F.y, 1.0 - F.x);
         cells[0] = I + 1.0; cells[1] = I + float2(1, 0); cells[2] = I + float2(0, 1);
     }
-    W = pow(max(W, 0.0), exponent);
-    W /= max(W.x + W.y + W.z, 1e-8);
+    // Scaling before pow preserves normalized ratios and keeps the strongest
+    // weight at one, even at the triangle centroid with exponent = 64.
+    W = max(W, 0.0);
+    W = pow(W / max(W.x, max(W.y, W.z)), exponent);
+    W /= W.x + W.y + W.z;
+
+    // Keep at least one sample even when threshold is 1. Renormalize after
+    // skipping so constant inputs (including alpha/data maps) stay constant.
+    uint strongest = W.y > W.x ? 1u : 0u;
+    if (W.z > W[strongest]) strongest = 2u;
+    for (uint index = 0; index < 3; ++index) {
+        if (index != strongest && W[index] <= threshold) W[index] = 0.0;
+    }
+    W /= W.x + W.y + W.z;
 
     float4 result = 0.0;
     for (uint index = 0; index < 3; ++index) {
-        if (W[index] > threshold) {
+        if (W[index] > 0.0) {
             float4 value = hexTilingLookup(texture, textureSampler, sampleUV,
                                            cells[index], sampleDx, sampleDy);
-            result += (value - mean) * W[index];
+            result.rgb += (value.rgb - mean.rgb) * W[index];
+            result.a += value.a * W[index];
         }
     }
-    return contrastCorrect ? mean + result / max(length(W), 1e-8) : result;
+    if (contrastCorrect) result.rgb = mean.rgb + result.rgb / length(W);
+    return result;
 }
 
 #endif

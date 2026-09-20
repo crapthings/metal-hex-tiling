@@ -16,3 +16,5 @@ jobs:
         run: swift --version
       - name: Test
         run: swift test
+      - name: Build release example
+        run: swift build -c release --product HexTilingDemo

@@ -2,13 +2,17 @@
 
 A small, Metal-only Swift package for stochastic, non-repeating texture tiling on Apple GPUs.
 
-[Project page](https://crapthings.github.io/metal-hex-tiling/) · [Algorithm and architecture](Documentation/Architecture.md)
+[Project page](https://crapthings.github.io/metal-hex-tiling/) · [Algorithm and architecture](Documentation/Architecture.md) · [Measured performance](Documentation/Performance.md)
 
-![Before and after comparison: regular repeat sampling versus stochastic hex tiling](docs/images/metal-hex-tiling-before-after.png)
+| Repeat sampling | Hex tiling |
+| --- | --- |
+| ![Terrain with repeat sampling](docs/images/terrain-repeat.png) | ![Terrain with hex tiling](docs/images/terrain-hex.png) |
 
 The same seamless texture, terrain, camera, lighting, and UV scale—only the sampling method changes.
 
-![Top-view comparison on flat terrain: regular repeat sampling versus stochastic hex tiling](docs/images/metal-hex-tiling-top-view-before-after.png)
+| Repeat sampling · top view | Hex tiling · top view |
+| --- | --- |
+| ![Flat top view with repeat sampling](docs/images/top-repeat.png) | ![Flat top view with hex tiling](docs/images/top-hex.png) |
 
 The orthographic top view removes perspective, elevation, per-tile tint, and fog so the regular repetition grid—and its suppression by stochastic sampling—can be inspected directly.
 
@@ -28,6 +32,29 @@ Regular UV repetition preserves texture seams but exposes a visible grid of repe
 - A Metal-capable GPU
 
 The library depends on Metal, not MetalKit. It works with `MTKView`, `CAMetalLayer`, and offscreen renderers.
+
+## Try it
+
+Clone this repository, then run:
+
+```sh
+swift run -c release HexTilingDemo
+```
+
+The example includes its texture, generates mipmaps, and opens a terrain viewer. No asset downloads or Xcode project setup are needed.
+
+- **Space** switches between repeat and hex sampling at the same effective texture scale.
+- **T** switches between terrain and a flat top view.
+- **C** toggles contrast correction; **[ / ]** adjusts patch scale.
+- **WASD** moves, dragging looks around, and **R** resets the camera.
+
+Controls stay visible in the window. The title shows current settings and whole-frame CPU/GPU timings (not an isolated tiling benchmark).
+
+```sh
+swift run HexTilingDemo --help
+swift run HexTilingDemo --verify
+swift run HexTilingDemo --verify --top-down-flat --snapshot /tmp/hex-tiling.png
+```
 
 ## Installation
 
@@ -83,6 +110,8 @@ fragment float4 materialFragment(
 
 Input textures must be seamless and should include mipmaps. Use an sRGB pixel format for color maps and linear formats for normal, roughness, and metalness maps. Blended normal maps still need decoding and normalization in your material pipeline.
 
+Contrast correction affects RGB only; alpha uses normalized weighted blending. For normal, roughness, and metalness maps, start with `useContrastCorrectedBlending: false`. If a texture has only one mip level, correction is automatically disabled because no coarse-mip mean is available. RGB is not clamped by the library; clamp bounded material data as needed before shading.
+
 ## Parameters
 
 | Parameter | Default | Meaning |
@@ -94,13 +123,17 @@ Input textures must be seamless and should include mipmaps. Use an sRGB pixel fo
 
 Each map costs up to three regular texture samples per fragment. Contrast correction adds one lookup at the coarsest mip level. See [Algorithm and architecture](Documentation/Architecture.md) for implementation details and performance tradeoffs.
 
+Skipped weights are renormalized, and the strongest sample is always kept—even at a threshold of `1`. This preserves constant input values while trading smooth transitions for fewer lookups.
+
 ## Development
 
 ```sh
 swift test
 ```
 
-The `macos-metal-001` sibling project is an executable integration example and runs an additional GPU render/readback verification.
+Tests include actual GPU sampling for extreme weights, constant color/data, alpha, sRGB decoding, explicit mip selection, and single-mip fallback. GPU tests explicitly skip when Metal is unavailable; a successful CPU-only CI run does not establish GPU correctness.
+
+The self-contained example lives in `Examples/Terrain`. Its `--verify` mode runs actual GPU rendering and readback, checking sampling/view switches, deterministic output, and terrain continuity. MetalKit is used only by the example target.
 
 ## License and attribution
 
