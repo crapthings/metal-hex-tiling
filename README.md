@@ -4,13 +4,18 @@ A small, Metal-only Swift package for stochastic, non-repeating texture tiling o
 
 [Project page](https://crapthings.github.io/metal-hex-tiling/) · [Algorithm and architecture](Documentation/Architecture.md)
 
-It ports the shader algorithm used by [`three-hex-tiling`](https://github.com/ameobea/three-hex-tiling): a seamless source texture is sampled at up to three deterministic random offsets and blended over a triangular/hexagonal lattice. The result suppresses obvious periodic repetition without generating or storing a larger texture.
-
-![The same terrain and seamless texture rendered with regular repeat sampling and with three-sample stochastic hex tiling](docs/images/metal-hex-tiling-before-after.png)
-
 ![Before and after comparison: regular repeat sampling versus stochastic hex tiling](docs/images/metal-hex-tiling-before-after.png)
 
-The comparison uses the same seamless texture, terrain, camera, lighting, and UV scale. Only the texture sampling method changes: regular repeat sampling on the left, `HexTilingMetal` with up to three stochastic samples on the right.
+The same seamless texture, terrain, camera, lighting, and UV scale—only the sampling method changes.
+
+## Why
+
+Regular UV repetition preserves texture seams but exposes a visible grid of repeated features. MetalHexTiling samples the source texture at up to three deterministic random offsets and blends them over a triangular/hexagonal lattice. This breaks the repetition without generating geometry or storing a larger texture.
+
+- Metal-only core; no MetalKit or AppKit dependency
+- Explicit gradients for correct mip selection across patch boundaries
+- Works with color, normal, roughness, and metalness maps
+- Four runtime-tunable parameters in one 16-byte value
 
 ## Requirements
 
@@ -26,15 +31,20 @@ Add this package to `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/crapthings/metal-hex-tiling.git", from: "0.1.0")
+    .package(
+        url: "https://github.com/crapthings/metal-hex-tiling.git",
+        branch: "main"
+    )
 ]
 ```
 
 Then add `.product(name: "MetalHexTiling", package: "metal-hex-tiling")` to your target dependencies.
 
+The package currently tracks `main`. A semantic-version dependency will be documented with the first tagged release.
+
 ## Usage
 
-Compose the packaged MSL implementation with your application shader:
+Compile the packaged MSL implementation together with your application shader:
 
 ```swift
 import MetalHexTiling
@@ -52,7 +62,7 @@ encoder.setFragmentBytes(
 )
 ```
 
-Call the function from the appended MSL source:
+Then call the sampling primitive from the appended MSL source:
 
 ```metal
 fragment float4 materialFragment(
@@ -67,7 +77,7 @@ fragment float4 materialFragment(
 }
 ```
 
-Input textures must be seamless and should include mipmaps. Use an sRGB pixel format for color maps and linear formats for normal, roughness, and metalness maps.
+Input textures must be seamless and should include mipmaps. Use an sRGB pixel format for color maps and linear formats for normal, roughness, and metalness maps. Blended normal maps still need decoding and normalization in your material pipeline.
 
 ## Parameters
 
@@ -78,7 +88,7 @@ Input textures must be seamless and should include mipmaps. Use an sRGB pixel fo
 | `lookupSkipThreshold` | `0.01` | Skips low-weight texture reads to reduce bandwidth. |
 | `textureSampleCoefficientExponent` | `8` | Controls blend sharpness and how often reads can be skipped. |
 
-Each map costs up to three regular texture samples per fragment. Contrast correction adds one lookup at the coarsest mip level. See [Algorithm and architecture](Documentation/Architecture.md) for details and integration tradeoffs.
+Each map costs up to three regular texture samples per fragment. Contrast correction adds one lookup at the coarsest mip level. See [Algorithm and architecture](Documentation/Architecture.md) for implementation details and performance tradeoffs.
 
 ## Development
 
