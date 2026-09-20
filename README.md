@@ -8,6 +8,10 @@ A small, Metal-only Swift package for stochastic, non-repeating texture tiling o
 
 The same seamless texture, terrain, camera, lighting, and UV scale—only the sampling method changes.
 
+![Top-view comparison on flat terrain: regular repeat sampling versus stochastic hex tiling](docs/images/metal-hex-tiling-top-view-before-after.png)
+
+The orthographic top view removes perspective, elevation, per-tile tint, and fog so the regular repetition grid—and its suppression by stochastic sampling—can be inspected directly.
+
 ## Why
 
 Regular UV repetition preserves texture seams but exposes a visible grid of repeated features. MetalHexTiling samples the source texture at up to three deterministic random offsets and blends them over a triangular/hexagonal lattice. This breaks the repetition without generating geometry or storing a larger texture.
